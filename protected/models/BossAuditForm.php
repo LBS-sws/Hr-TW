@@ -380,6 +380,7 @@ class BossAuditForm extends CFormModel
 
 	//判斷輸入框能否修改
 	public function getInputBool(){
-        return $this->status_type==5||!in_array($this->getScenario(),array("audit","finish","edit","save"));
+        return true;//台灣版不允許審核時修改數據
+        //return $this->status_type==5||!in_array($this->getScenario(),array("audit","finish","edit","save"));
     }
 }
