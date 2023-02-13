@@ -519,9 +519,6 @@ class BossApplyForm extends CFormModel
             $email->setMessage($message);
             $email->setSubject($subject);
             $email->addEmailToPrefixAndCity('BA05',$this->city);
-            var_dump($this->city);
-            var_dump($email->getToAddr());
-            die();
             if(empty($email->getToAddr())){//沒有副總監
                 $email->addEmailToPrefixAndCity('BA03',$this->city);
                 Yii::app()->db->createCommand()->update('hr_boss_audit', array(
