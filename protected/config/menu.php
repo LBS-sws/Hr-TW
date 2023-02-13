@@ -444,6 +444,10 @@ return array(
 				'access'=>'YB08',
                 'url'=>'/report/estimated',
 			),
+            'Boss Audit Plan Report'=>array(//老总年度考核进度报表
+                'access'=>'YB10',
+                'url'=>'/report/bossReport',
+            ),
 			'Report Manager'=>array(
 				'access'=>'YB01',
                 'url'=>'/queue/index',

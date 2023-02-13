@@ -30,6 +30,11 @@ $this->pageTitle=Yii::app()->name . ' - Boss Apply Form';
 				'submit'=>Yii::app()->createUrl('bossAudit/index',array('type'=>$this->boss_type))));
 		?>
         <?php if ($model->scenario!='view'): ?>
+            <?php if ($model->status_type == 0&&$model->boss_type==$bossType): ?>
+                <?php echo TbHtml::button('<span class="fa fa-save"></span> '.Yii::t('misc','Save'), array(
+                    'submit'=>Yii::app()->createUrl('bossAudit/save',array('type'=>$this->boss_type))));
+                ?>
+            <?php endif ?>
             <?php if ($model->status_type == 1&&$model->boss_type==$bossType): ?>
                 <?php echo TbHtml::button('<span class="fa fa-upload"></span> '.Yii::t('contract','Audit'), array(
                     'submit'=>Yii::app()->createUrl('bossAudit/audit',array('type'=>$this->boss_type))));
@@ -47,14 +52,25 @@ $this->pageTitle=Yii::app()->name . ' - Boss Apply Form';
         <?php endif; ?>
 	</div>
 
-            <?php if ($model->scenario!='view'&&$model->status_type == 5&&$model->boss_type==$bossType): ?>
             <div class="btn-group pull-right" role="group">
-                <?php
-                echo TbHtml::button('<span class="fa fa-mail-reply-all"></span> '.Yii::t('contract','Rejected'), array(
-                    'name'=>'btnJect','id'=>'btnJect','data-toggle'=>'modal','data-target'=>'#jectdialog'));
-                ?>
+                <?php if (Yii::app()->user->validFunction('ZR16')): ?>
+                    <?php echo TbHtml::button('<span class="fa fa-remove"></span> '.Yii::t('misc','Delete'), array(
+                            'name'=>'btnDelete','id'=>'btnDelete','data-toggle'=>'modal','data-target'=>'#removedialog',)
+                    );
+                    ?>
+                <?php endif ?>
+                <?php if ($model->scenario!='view'&&$model->status_type == 5&&$model->boss_type==$bossType): ?>
+                    <?php
+                    echo TbHtml::button('<span class="fa fa-mail-reply-all"></span> '.Yii::t('contract','Rejected'), array(
+                        'name'=>'btnJect','id'=>'btnJect','data-toggle'=>'modal','data-target'=>'#jectdialog'));
+                    ?>
+                <?php endif ?>
+                <?php if ($model->scenario!='new'){
+                    //流程
+                    echo TbHtml::button('<span class="fa fa-file-text-o"></span> '.Yii::t('app','History'), array(
+                        'name'=>'btnBossFlow','id'=>'btnBossFlow','data-toggle'=>'modal','data-target'=>'#bossflowinfodialog'));
+                } ?>
             </div>
-            <?php endif ?>
 	</div></div>
 
 	<div class="box box-info">
@@ -91,6 +107,14 @@ $this->pageTitle=Yii::app()->name . ' - Boss Apply Form';
                 </div>
             </div>
             <div class="form-group">
+                <?php echo TbHtml::label(Yii::t("contract","City"),'',array('class'=>"col-sm-2 control-label")); ?>
+                <div class="col-sm-2">
+                    <?php echo TbHtml::textField('city',CGeneral::getCityName($model->city),
+                        array('readonly'=>(true))
+                    ); ?>
+                </div>
+            </div>
+            <div class="form-group">
                 <?php echo $form->labelEx($model,'audit_year',array('class'=>"col-sm-2 control-label")); ?>
                 <div class="col-sm-2">
                     <div class="input-group">
@@ -112,13 +136,18 @@ $this->pageTitle=Yii::app()->name . ' - Boss Apply Form';
 	</div>
 </section>
 <?php
+$this->renderPartial('//site/removedialog');
+$this->renderPartial('//site/bossflow',array('model'=>$model));
 $this->renderPartial('//site/ject',array('model'=>$model,'form'=>$form,'rejectName'=>"reject_remark",'submit'=>Yii::app()->createUrl('bossAudit/reject',array('type'=>$this->boss_type))));
 ?>
 <?php
 $js = "
+    $('.bossHintTitle').popover();
 ";
 Yii::app()->clientScript->registerScript('calcFunction',$js,CClientScript::POS_READY);
 
+$js = Script::genDeleteData(Yii::app()->createUrl('bossAudit/delete'));
+Yii::app()->clientScript->registerScript('deleteRecord',$js,CClientScript::POS_READY);
 $js = Script::genReadonlyField();
 Yii::app()->clientScript->registerScript('readonlyClass',$js,CClientScript::POS_READY);
 ?>

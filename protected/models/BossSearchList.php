@@ -30,13 +30,13 @@ class BossSearchList extends CListPageModel
 		$sql1 = "select b.name,b.code,d.name as city_name,a.* from hr_boss_audit a 
                 LEFT JOIN hr_employee b ON a.employee_id = b.id 
                 LEFT JOIN security$suffix.sec_city d ON d.code = a.city 
-                where a.status_type = 2 and b.city IN ($city_allow) 
+                where a.status_type = 2 and a.city IN ($city_allow) 
 			";
 		$sql2 = "select count(a.id)
 				from hr_boss_audit a 
                 LEFT JOIN hr_employee b ON a.employee_id = b.id 
                 LEFT JOIN security$suffix.sec_city d ON d.code = a.city 
-                where a.status_type = 2 and b.city IN ($city_allow) 
+                where a.status_type = 2 and a.city IN ($city_allow) 
 			";
 		$clause = "";
 		if (!empty($this->searchField) && !empty($this->searchValue)) {
@@ -61,7 +61,9 @@ class BossSearchList extends CListPageModel
 		if (!empty($this->orderField)) {
 			$order .= " order by ".$this->orderField." ";
 			if ($this->orderType=='D') $order .= "desc ";
-		}
+		}else{
+            $order .= " order by a.audit_year desc ";
+        }
 
 		$sql = $sql2.$clause;
 		$this->totalRow = Yii::app()->db->createCommand($sql)->queryScalar();
@@ -73,16 +75,18 @@ class BossSearchList extends CListPageModel
 		$this->attr = array();
 		if (count($records) > 0) {
 			foreach ($records as $k=>$record) {
+                $ratio_a = $record['ratio_a']*0.01;
+                $ratio_b = $record['ratio_b']*0.01;
                 //$arrList = $this->statusToColor($record['status_type']);
                 $bossRewardType = BossApplyForm::getBossRewardType($record['city']);
-                $record["results_a"]=empty($record['results_a'])?0:floatval($record['results_a'])*0.5;
+                $record["results_a"]=empty($record['results_a'])?0:floatval($record['results_a'])*$ratio_a;
                 if($bossRewardType == 1){
                     $record['results_c'] = "-";
-                    $record["results_b"]=empty($record['results_b'])?0:floatval($record['results_b'])*0.5;
+                    $record["results_b"]=empty($record['results_b'])?0:floatval($record['results_b'])*$ratio_b;
                     $record['results_sum'] = $record["results_a"]+$record["results_b"];
                 }else{
                     $record['results_c'] = $record['results_c']."%";
-                    $record["results_b"]=empty($record['results_b'])?0:floatval($record['results_b'])*0.35;
+                    $record["results_b"]=empty($record['results_b'])?0:floatval($record['results_b'])*$ratio_b;
                     $record['results_sum'] = $record["results_a"]+$record["results_b"]+$record['results_c'];
                 }
                 $record['results_sum'] = sprintf("%.2f",$record['results_sum']);
@@ -93,7 +97,7 @@ class BossSearchList extends CListPageModel
 					'results_a'=>$record['results_a']."%",
 					'results_b'=>$record['results_b']."%",
 					'results_c'=>$record['results_c'],
-					'results_sum'=>$record['results_sum']."%",
+					'results_sum'=>$record['results_sum'],
 					'audit_year'=>$record['audit_year'],
                     'city_name'=>$record['city_name'],
 					'status_type'=>'',

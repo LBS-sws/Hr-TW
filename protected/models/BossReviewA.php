@@ -32,10 +32,14 @@ class BossReviewA extends BossReview
 
     //自由配置A項(城市默認)
     public function cityListX(){
-        $row = Yii::app()->db->createCommand()->select("json_text")->from("hr_boss_set_a")
+        $row = Yii::app()->db->createCommand()->select("json_text,num_ratio")->from("hr_boss_set_a")
             ->where('tacitly=1 or city=:city ', array(':city'=>$this->city))->order("tacitly asc")->queryRow();
         if($row){
             $this->listX = array();
+            $this->ratio_a = $row["num_ratio"];
+            if(!empty($this->model)){
+                $this->model->ratio_a=$this->ratio_a;
+            }
             $jsonList = json_decode($row["json_text"],true);
             foreach ($jsonList as $list){
                 if($list["show"] == 1){
@@ -54,7 +58,7 @@ class BossReviewA extends BossReview
             array('value'=>'one_4','name'=>Yii::t("contract","one_4"),'function'=>"getPlanYearRate","width"=>"120px",'static_str'=>"%","emailBool"=>true),//预计增长百分比
             array('value'=>'one_5','name'=>Yii::t("contract","one_5"),'function'=>"getPlanYearCof","width"=>"100px"),//系数
             array('value'=>'one_6','name'=>$this->audit_year.Yii::t("contract","one_6"),'function'=>"getNowYear","width"=>"160px",'pro_str'=>"%","emailBool"=>true),//2019年实际达成数据
-            array('value'=>'one_7','name'=>Yii::t("contract","one_7"),'function'=>"getNowYearRate","width"=>"120px",'static_str'=>"%","emailBool"=>true),//实际达成百分比
+            array('value'=>'one_7','name'=>Yii::t("contract","one_7"),'function'=>"getNowYearRate","width"=>"160px",'static_str'=>"%","emailBool"=>true),//实际达成百分比
             array('value'=>'one_8','name'=>Yii::t("contract","one_8"),'function'=>"getLadderDiffer","width"=>"100px"),//阶梯落差
             array('value'=>'one_9','name'=>Yii::t("contract","one_9"),'function'=>"getLadderCof","width"=>"100px"),//落差系数
             array('value'=>'one_10','name'=>Yii::t("contract","one_10"),'function'=>"getNowCof","width"=>"100px"),//实际系数
@@ -293,6 +297,29 @@ class BossReviewA extends BossReview
         $this->scoreSum +=$value;
         return array('value'=>$this->json_text[$type][$str],'name'=>$value."%");
     }
+
+    //邮件专用
+    public function getEveryOrNowNumber($type,$str="every"){
+        $value = $this->json_text[$type]["one_3"];
+        switch ($str){
+            case "complete"://目标实际完成 = XX年实际达成数据÷预计XX年目标数据
+                $value=empty($value)?0:$this->json_text[$type]["one_6"]/$value;
+                $value*=100;
+                $value = round($value,2);
+                break;
+            case "every"://每月应达成平均数
+                $value=$value/12;
+                $value = round($value);
+                break;
+            case "now"://累计到当月应达成数据
+                $value=$value/12;
+                $value = round($value);
+                $value*=$this->search_month;
+                break;
+        }
+        return $value;
+    }
+
     //备注
     public function getRemark($type,$str,$list=array()){
         $value = isset($this->json_text[$type][$str])?$this->json_text[$type][$str]:"";

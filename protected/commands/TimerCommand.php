@@ -10,6 +10,9 @@ class TimerCommand extends CConsoleCommand {
     protected $review_list = array();//老總年度考核列表
 
     public function run() {
+
+        $this->bossReviewEmailToMonth();//老总年度考核邮件（一个月提示一次)
+
         $command = Yii::app()->db->createCommand();
         $firstday = date("Y/m/d");
         echo "----------------------------------------------\r\n";
@@ -791,21 +794,24 @@ class TimerCommand extends CConsoleCommand {
 
     //老总年度考核邮件（一个月提示一次)
     private function bossReviewEmailToMonth(){
-        if(date("d")!="01") {//每月1號
+        if(date("m")=="01"||date("m")=="02"||date("d")!="01") {//每月1號(1月、2月份不需要)
             return;
         }
         $systemId = Yii::app()->params['systemId'];
-        echo "boss review start\r\n";
-        $email = new Email("老总年度考核进度".date("(Y年m月)"),"","老总年度考核进度".date("(Y年m月)"));
+        $setSubject = "老总年度考核进度".date("(Y年m月)",strtotime("-2 month"));
+        $email = new Email($setSubject,"",$setSubject);
         $userList = $email->getUserListToPrefix("BA01");
         if($userList){
+            $bossList = $email->getOnlyLRTMUser();
             foreach ($userList as $user){
                 $email->resetToAddr();
+                $email->resetAttr();
                 $html = $this->bossReviewEmailHtml($user);
                 if(!empty($html)){
+                    $email->setSubject($setSubject." - ".$user['name']);
                     $email->setMessage($html);
                     $email->addToAddrEmail($user['email']);
-                    $email->addToAddrUser($user['username']);
+                    $email->addEmailToOnlyCityBoss($user['city'],$bossList);
                     $email->sent("系统生成",$systemId);
                 }
             }
@@ -819,17 +825,20 @@ class TimerCommand extends CConsoleCommand {
     private function sendReviewAllEmail(){
         if(!empty($this->review_list)){
             $systemId = Yii::app()->params['systemId'];
-            $email = new Email("老总年度考核進度汇总".date("(Y年m月)"),"","老总年度考核進度汇总".date("(Y年m月)"));
+            $setSubject = "老总年度考核進度汇总".date("(Y年m月)",strtotime("-2 month"));
+            $email = new Email($setSubject,"",$setSubject);
             $userList = $email->getOnlyLRTMUserList();
             if($userList){
                 foreach ($userList as $user){
                     $email->resetToAddr();
+                    $email->resetAttr();
                     $html ="";
 
                     foreach ($this->review_list as $reviewList){
                         if(empty($user["cityList"])||in_array($reviewList["city"],$user["cityList"])){
                             $html.=empty($html)?"":"<p style='border-bottom: 2px dashed #000'>&nbsp;</p>";
                             $html.=$reviewList["html"];
+                            $email->insertAttr($reviewList["attr"]["title"],$reviewList["attr"]["attr"]);
                         }
                     }
                     if(!empty($html)){
@@ -845,35 +854,54 @@ class TimerCommand extends CConsoleCommand {
 
     private function bossReviewEmailHtml($user){
         $year = date("Y");
+        $month = date("n",strtotime("-2 months"));
+        $month = $month>10?0:$month;
         $html = "";
+        $rptBossPlanModel = new RptBossPlanList();
+        $rptBossPlanModel->year = $year;
+        $rptBossPlanModel->month = $month;
+        $rptBossPlanModel->cityName = $user["city_name"];
+        $rptBossPlanModel->userName = $user["name"]." - ".$user["code"];
         $bossModel = new BossSearchForm();
-        $bossModel->setDataToEmployeeIdAndYear($user["id"],$year);
+        $bossModel->setDataToEmployeeIdAndYear($user["id"],$year,false);
         $bossModel->city = $user["city"];
         $bossModel->lcu = $user["username"];
         if($bossModel->status_type != 2){
             $html = "<h2>城市：".$user["city_name"]."</h2>";
-            $html .= "<h2>".$year."年老总年度考核 - ".$user["name"]."</h2>";
+            $title = $year."年老总年度考核 - ".$user["name"];
+            $html .= "<h2>{$title}</h2>";
             $list = array(
-                array("name"=>"（A） 目标订立部分","class"=>"BossReviewA","width"=>"1000px","colspan"=>5),
-                array("name"=>"（B） 其他细节部分","class"=>"BossReviewB","width"=>"700px","colspan"=>3)
+                array("name"=>"（A） 目标订立部分","class"=>"BossReviewA","width"=>"auto","colspan"=>8),
+                array("name"=>"（B） 其他细节部分","class"=>"BossReviewB","width"=>"auto","colspan"=>6),
+                array("name"=>"（C） 自选项目部分","class"=>"BossReviewC","width"=>"800px","colspan"=>4)
             );
+            $bodyList=array();
             foreach ($list as $key=>$item){
                 $html.="<p>&nbsp;</p>";
-                $html.="<table width='".$item["width"]."' border='1px'>";
+                $html.="<table width='".$item["width"]."' border='1px' style='border-color:#000;'>";
                 $html.="<thead><tr><td colspan='".$item["colspan"]."'><b>".$item["name"]."</b></td></tr></thead>";
                 $className = $item["class"];
                 $bossReviewModel = new $className($bossModel,true);
+                $bossReviewModel->resetListX($bossModel->json_listX);
+                $bossReviewModel->search_month = $month;
                 $html .= $bossReviewModel->getTableHtmlToEmail();
+                $bodyList[$key]["title"]=$item["name"];
+                $bodyList[$key]["list"]=$bossReviewModel->getDetailList();
                 $html.="</table>";
             }
-            $this->review_list[] = array('city'=>$user["city"],'html'=>$html);
+            $rptBossPlanModel->setBodyList($bodyList);
+            $attr = array(
+                "title"=>$title,
+                "attr"=>$rptBossPlanModel->genReport(false)
+            );
+            $this->review_list[] = array('city'=>$user["city"],'html'=>$html,'attr'=>$attr);
         }
         return $html;
     }
 
     //初始化所有老總考核的總分
     public function resetBossListScore(){
-        $rows = Yii::app()->db->createCommand()->select("a.json_listX,a.id,a.results_a,a.results_b,a.results_c,a.status_type,a.city,a.audit_year,a.employee_id,a.lcu,a.json_text,b.code as employee_code,b.name as employee_name")
+        $rows = Yii::app()->db->createCommand()->select("a.json_listX,a.ratio_a,a.ratio_b,a.ratio_c,a.id,a.results_a,a.results_b,a.results_c,a.status_type,a.city,a.audit_year,a.employee_id,a.lcu,a.json_text,b.code as employee_code,b.name as employee_name")
             ->from("hr_boss_audit a")
             ->leftJoin("hr_employee b","a.employee_id = b.id")
             ->where("a.status_type !=2")->queryAll();
@@ -885,6 +913,9 @@ class TimerCommand extends CConsoleCommand {
                 $model->employee_id = $row['employee_id'];
                 $model->audit_year = $row['audit_year'];
                 $model->city = $row['city'];
+                $model->ratio_a = $row['ratio_a'];
+                $model->ratio_b = $row['ratio_b'];
+                $model->ratio_c = $row['ratio_c'];
                 $model->status_type = $row['status_type'];
                 $model->results_c = floatval($row["results_c"]);
                 //A類驗證
@@ -908,10 +939,12 @@ class TimerCommand extends CConsoleCommand {
                 }
 
                 $bossRewardType = BossApplyForm::getBossRewardType($row['city']);
+                $ratio_a = $model->ratio_a*0.01;
+                $ratio_b = $model->ratio_b*0.01;
                 if($bossRewardType == 1){
-                    $model->results_sum = $model->results_a*0.5+$model->results_b*0.5;
+                    $model->results_sum = $model->results_a*$ratio_a+$model->results_b*$ratio_b;
                 }else{
-                    $model->results_sum = $model->results_a*0.5+$model->results_b*0.35+$model->results_c;
+                    $model->results_sum = $model->results_a*$ratio_a+$model->results_b*$ratio_b+$model->results_c;
                 }
 
                 Yii::app()->db->createCommand()->update('hr_boss_audit', array(

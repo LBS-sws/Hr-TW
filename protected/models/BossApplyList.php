@@ -55,16 +55,17 @@ class BossApplyList extends CListPageModel
 
 	public function retrieveDataByPage($pageNum=1)
 	{
+        $city = Yii::app()->user->city();
         $suffix = Yii::app()->params['envSuffix'];
         $city_allow = Yii::app()->user->city_allow();
 		$sql1 = "select b.name,b.code,a.* from hr_boss_audit a 
                 LEFT JOIN hr_employee b ON a.employee_id = b.id 
-                where a.employee_id = '$this->employee_id' 
+                where a.employee_id = '$this->employee_id' and a.city='$city' 
 			";
 		$sql2 = "select count(a.id)
 				from hr_boss_audit a 
                 LEFT JOIN hr_employee b ON a.employee_id = b.id 
-                where a.employee_id = '$this->employee_id' 
+                where a.employee_id = '$this->employee_id' and a.city='$city' 
 			";
 		$clause = "";
 		if (!empty($this->searchField) && !empty($this->searchValue)) {
@@ -98,16 +99,18 @@ class BossApplyList extends CListPageModel
 		$this->attr = array();
 		if (count($records) > 0) {
 			foreach ($records as $k=>$record) {
+                $ratio_a = $record['ratio_a']*0.01;
+                $ratio_b = $record['ratio_b']*0.01;
                 $bossRewardType = BossApplyForm::getBossRewardType($record['city']);
                 $arrList = $this->statusToColor($record);
-                $record["results_a"]=empty($record['results_a'])?0:floatval($record['results_a'])*0.5;
+                $record["results_a"]=empty($record['results_a'])?0:floatval($record['results_a'])*$ratio_a;
                 if($bossRewardType == 1){
                     $record['results_c'] = "-";
-                    $record["results_b"]=empty($record['results_b'])?0:floatval($record['results_b'])*0.5;
+                    $record["results_b"]=empty($record['results_b'])?0:floatval($record['results_b'])*$ratio_b;
                     $record['results_sum'] = $record["results_a"]+$record["results_b"];
                 }else{
                     $record['results_c'] = $record['results_c']."%";
-                    $record["results_b"]=empty($record['results_b'])?0:floatval($record['results_b'])*0.35;
+                    $record["results_b"]=empty($record['results_b'])?0:floatval($record['results_b'])*$ratio_b;
                     $record['results_sum'] = $record["results_a"]+$record["results_b"]+$record['results_c'];
                 }
                 $record['results_sum'] = sprintf("%.2f",$record['results_sum']);
@@ -118,7 +121,7 @@ class BossApplyList extends CListPageModel
                     'results_a'=>$record['results_a'],
                     'results_b'=>$record['results_b'],
 					'results_c'=>$record['results_c'],
-					'results_sum'=>$record['results_sum']."%",
+					'results_sum'=>$record['results_sum'],
 					'audit_year'=>$record['audit_year'],
 					'status_type'=>$arrList['status'],
 					'style'=>$arrList['style'],

@@ -20,6 +20,7 @@ class BossReviewB extends BossReview
             array('value'=>'two_six','name'=>Yii::t("contract","two_six"),'pro_str'=>"%",'percent'=>'5','show'=>'1'),//提交销售5步曲数量培训销售部分
             array('value'=>'two_nine','name'=>Yii::t("contract","two_nine"),'pro_str'=>"%",'percent'=>'5','show'=>'1'),//IA物料使用率
             array('value'=>'two_ten','name'=>Yii::t("contract","two_ten"),'pro_str'=>"%",'percent'=>'5','show'=>'1'),//IB物料使用率
+            //array('value'=>'two_service','name'=>Yii::t("contract","two_service"),'percent'=>'0','show'=>'1'),//蔚诺租赁服务机器台数
             //array('value'=>'two_seven','name'=>Yii::t("contract","two_seven"),'pro_str'=>"%")//提交销售5步曲数量培训销售经理部分
         );
     }
@@ -33,10 +34,14 @@ class BossReviewB extends BossReview
 
     //自由設置B項目(城市默認)
     public function cityListX(){
-        $row = Yii::app()->db->createCommand()->select("json_text")->from("hr_boss_set_b")
+        $row = Yii::app()->db->createCommand()->select("json_text,num_ratio")->from("hr_boss_set_b")
             ->where('tacitly=1 or city=:city ', array(':city'=>$this->city))->order("tacitly asc")->queryRow();
         if($row){
             $this->listX = array();
+            $this->ratio_b = $row["num_ratio"];
+            if(!empty($this->model)){
+                $this->model->ratio_b=$this->ratio_b;
+            }
             $jsonList = json_decode($row["json_text"],true);
             foreach ($jsonList as $list){
                 if($list["show"] == 1){
@@ -69,7 +74,8 @@ class BossReviewB extends BossReview
                 $this->json_text[$type][$str] = $this->valueStaffReview($this->employee_id,$this->audit_year-1);
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
             case "two_two"://月报表分数
-                $this->json_text[$type][$str] = MonthList::getSumAverageByYear($this->audit_year-1,$this->city);
+                //$this->json_text[$type][$str] = MonthList::getSumAverageByYear($this->audit_year-1,$this->city);
+                $this->json_text[$type][$str] = $this->valueHdr($this->city,$this->audit_year-1);
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
             case "two_three"://质检拜访量
                 $this->json_text[$type][$str] = $this->value($this->city,$this->audit_year-1,"00042");
@@ -97,6 +103,9 @@ class BossReviewB extends BossReview
             case "two_ten"://IB物料使用率
                 $this->json_text[$type][$str] = $this->valueStopToRate($this->city,$this->audit_year-1,array("00024","00004"));
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]."%");
+            case "two_service"://蔚诺租赁服务机器台数
+                $this->json_text[$type][$str] = $this->valueServiceNum($this->city,$this->audit_year-1);
+                return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
         }
         $this->json_text[$type][$str] = 0;
         return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
@@ -138,7 +147,8 @@ class BossReviewB extends BossReview
                 $this->json_text[$type][$str] = $this->valueStaffReview($this->employee_id,$this->audit_year);
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
             case "two_two"://月报表分数
-                $this->json_text[$type][$str] = MonthList::getSumAverageByYear($this->audit_year,$this->city);
+                //$this->json_text[$type][$str] = MonthList::getSumAverageByYear($this->audit_year,$this->city);
+                $this->json_text[$type][$str] = $this->valueHdr($this->city,$this->audit_year);
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
             case "two_three"://质检拜访量
                 $this->json_text[$type][$str] = $this->value($this->city,$this->audit_year,"00042");
@@ -166,6 +176,9 @@ class BossReviewB extends BossReview
             case "two_ten"://IB物料使用率
                 $this->json_text[$type][$str] = $this->valueStopToRate($this->city,$this->audit_year,array("00024","00004"));
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]."%");
+            case "two_service"://蔚诺租赁服务机器台数
+                $this->json_text[$type][$str] = $this->valueServiceNum($this->city,$this->audit_year);
+                return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
         }
         $this->json_text[$type][$str] = 0;
         return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
@@ -209,6 +222,27 @@ class BossReviewB extends BossReview
         $this->json_text[$type][$str] = $value;
         $this->scoreSum +=$value;
         return array('value'=>$this->json_text[$type][$str],'name'=>$value."%");
+    }
+    //邮件专用
+    public function getEveryOrNowNumber($type,$str="every"){
+        $value = $this->json_text[$type]["two_2"];
+        switch ($str){
+            case "complete"://目标实际完成 = XX年实际达成数据÷预计XX年目标数据
+                $value=empty($value)?0:$this->json_text[$type]["two_4"]/$value;
+                $value*=100;
+                $value = round($value,2);
+                break;
+            case "every"://每月应达成平均数
+                $value=$value/12;
+                $value = round($value);
+                break;
+            case "now"://累计到当月应达成数据
+                $value=$value/12;
+                $value = round($value);
+                $value*=$this->search_month;
+                break;
+        }
+        return $value;
     }
     //备注 - two_10
     public function getRemark($type,$str,$list=array()){

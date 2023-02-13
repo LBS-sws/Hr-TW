@@ -17,6 +17,9 @@ class BossSearchForm extends CFormModel
 	public $results_a;
 	public $results_b;
 	public $results_c;
+    public $ratio_a=50;//占比
+    public $ratio_b=35;//占比
+    public $ratio_c=15;//占比
     public $json_listX;
 
 	public function attributeLabels()
@@ -53,13 +56,24 @@ class BossSearchForm extends CFormModel
         }
     }
 
+	public function getBossFlowList($boss_id) {
+        $city_allow = Yii::app()->user->city_allow();
+        $suffix = Yii::app()->params['envSuffix'];
+        $rows = Yii::app()->db->createCommand()->select("c.disp_name,a.*")
+            ->from("hr_boss_flow a")
+            //->leftJoin("hr_boss_audit b","a.boss_id = b.id")
+            ->leftJoin("security$suffix.sec_user c","a.lcu = c.username")
+            ->where("a.boss_id=:id",array(":id"=>$boss_id))->queryAll();
+		return $rows?$rows:array();
+	}
+
 	public function retrieveData($index) {
         $city_allow = Yii::app()->user->city_allow();
         $suffix = Yii::app()->params['envSuffix'];
         $row = Yii::app()->db->createCommand()->select("a.*,b.code as employee_code,b.name as employee_name")
             ->from("hr_boss_audit a")
             ->leftJoin("hr_employee b","a.employee_id = b.id")
-            ->where("a.id=:id and a.status_type = 2 and b.city IN ($city_allow)",array(":id"=>$index))->queryRow();
+            ->where("a.id=:id and a.status_type = 2 and a.city IN ($city_allow)",array(":id"=>$index))->queryRow();
 		if ($row) {
             $this->id = $row['id'];
             $this->employee_id = $row['employee_id'];
@@ -81,13 +95,18 @@ class BossSearchForm extends CFormModel
 		return true;
 	}
 
-	public function setDataToEmployeeIdAndYear($employee_id,$year) {
+	public function setDataToEmployeeIdAndYear($employee_id,$year,$cityBool=true) {
+        if($cityBool){
+            $city_allow = Yii::app()->user->city_allow();
+            $citySql = " and b.city in ($city_allow) ";
+        }else{
+            $citySql = "";
+        }
         $suffix = Yii::app()->params['envSuffix'];
-        $city_allow = Yii::app()->user->city_allow();
         $row = Yii::app()->db->createCommand()->select("a.*,b.code as employee_code,b.name as employee_name")
             ->from("hr_boss_audit a")
             ->leftJoin("hr_employee b","a.employee_id = b.id")
-            ->where("a.employee_id=:employee_id and b.city in ($city_allow) and a.audit_year = :year",array(":employee_id"=>$employee_id,":year"=>$year))->queryRow();
+            ->where("a.employee_id=:employee_id $citySql and a.audit_year = :year",array(":employee_id"=>$employee_id,":year"=>$year))->queryRow();
 		if ($row) {
             $this->id = $row['id'];
             $this->employee_id = $row['employee_id'];
@@ -104,12 +123,45 @@ class BossSearchForm extends CFormModel
             $this->results_a = $row['results_a'];
             $this->results_b = $row['results_b'];
             $this->results_c = $row['results_c'];
+            $this->json_listX = empty($row['json_listX'])?array():json_decode($row['json_listX'],true);
 		}else{
 		    $this->employee_id = $employee_id;
 		    $this->audit_year = $year;
 		    $this->json_text = array();
         }
         return true;
+	}
+
+
+	public function setDataToCityAndYear($city,$year) {
+        $row = Yii::app()->db->createCommand()->select("a.*,b.code as employee_code,b.name as employee_name")
+            ->from("hr_boss_audit a")
+            ->leftJoin("hr_employee b","a.employee_id = b.id")
+            ->where("a.city=:city and a.audit_year = :year",array(":city"=>$city,":year"=>$year))->queryRow();
+		if ($row) {
+            $this->id = $row['id'];
+            $this->employee_id = $row['employee_id'];
+            $this->lcu = $row['lcu'];
+            $this->code = $row['employee_code'];
+            $this->name = $row['employee_name'];
+            $this->city = $row['city'];
+            $this->apply_date = $row['apply_date'];
+            $this->audit_year = $row['audit_year'];
+            $this->json_text = json_decode($row['json_text'],true);
+            $this->reject_remark = $row['reject_remark'];
+            $this->status_type = $row['status_type'];
+            $this->results_sum = $row['results_sum'];
+            $this->results_a = $row['results_a'];
+            $this->results_b = $row['results_b'];
+            $this->results_c = $row['results_c'];
+            $this->json_listX = empty($row['json_listX'])?array():json_decode($row['json_listX'],true);
+            return true;
+		}else{
+		    $this->employee_id = 0;
+		    $this->audit_year = $year;
+		    $this->json_text = array();
+            return false;
+        }
 	}
 
     //刪除驗證

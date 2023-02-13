@@ -11,16 +11,20 @@ class BossReviewC
     public $ready=true;//禁止用戶修改
     public $className="";//表單的name前綴
     public $audit_year;//考核年限
+    public $search_month=0;//查詢的月份（0:所有月份）
     public $status_type;//表單狀態
     public $listX=array();
     public $listY=array();
     public $json_text=array();
     public $scoreSum=0;
+    public $ratio_c=15;//占比
     protected $searchBool = false;
+    private $detailList=array();//报表专用
 
     public function __construct($model='',$searchBool=false)
     {
         if(!empty($model)){
+            $this->ratio_c = $model->ratio_c;
             $this->json_text = $model->json_text;
             $this->status_type = isset($model->status_type)?$model->status_type:0;//表單狀態
             $this->audit_year = $model->audit_year;
@@ -46,6 +50,10 @@ class BossReviewC
 
     protected function setListY(){
         $this->listY = array();
+    }
+
+    public function resetListX($list){
+        return;
     }
 
     public function validateJson(&$model,$bool=true){
@@ -82,16 +90,46 @@ class BossReviewC
                     return false;
                 }
             }
-            $sum = empty($this->json_text["three"]['count'])?0:($sum/$this->json_text["three"]['count'])*15;
+            $sum = empty($this->json_text["three"]['count'])?0:($sum/$this->json_text["three"]['count'])*$this->ratio_c;
             $sum = floatval(sprintf("%.2f",$sum));
             $this->json_text["three"]['sum'] = $sum;
-            if($this->json_text["three"]['sum']>15){
-                $message = Yii::t('contract',"(C)Optional project section")." - 不能大于15";
+            if($this->json_text["three"]['sum']>$this->ratio_c){
+                $message = Yii::t('contract',"(C)Optional project section")." - 不能大于$this->ratio_c";
                 $model->addError('json_text',$message);
                 return false;
             }
         }
         $this->scoreSum = $sum;
+    }
+
+    public function getTableHtmlToEmail(){
+        $width="170px";
+        $html="";
+        $html.="<thead><tr>";
+        foreach ($this->listX as $item){
+            $html.="<th width='$width'>".$item["name"]."</th>";
+            $this->detailList["title"][]=$item["name"];
+        }
+        $html.="</tr></thead>";
+        if(isset($this->json_text["three"]["list"])){
+            $html.="<tbody>";
+            foreach ($this->json_text["three"]["list"] as $key =>$list){
+                $html.="<tr>";
+                foreach ($this->listX as $item){
+                    $html.="<td width='$width'>".$list[$item["value"]]."</td>";
+                    $this->detailList["{$key}_01"][]=$list[$item["value"]];
+                }
+                $html.="</tr>";
+            }
+            $html.="</tbody>";
+            $html.="<tfoot><tr><td colspan='3' style='text-align: right'>";
+            $html.=$this->json_text["three"]["count"]."</td>";
+            $html.="<td>".$this->json_text["three"]["sum"]."</td>";
+            $html.="</tr></tfoot>";
+            $this->detailList["footer"][]=$this->json_text["three"]["count"];
+            $this->detailList["footer"][]=$this->json_text["three"]["sum"];
+        }
+        return $html;
     }
 
     public function getTableHtml(){
@@ -176,5 +214,9 @@ class BossReviewC
         $html.="</tr>";
 
         return $html;
+    }
+
+    public function getDetailList(){
+        return $this->detailList;
     }
 }
