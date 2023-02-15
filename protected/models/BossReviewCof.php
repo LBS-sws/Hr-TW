@@ -40,6 +40,11 @@ class BossReviewCof
                     }
                 }
             }
+            if($class_id=="one_two"){
+                var_dump($kpiList);
+                var_dump($keyNow);
+                var_dump($keyOld);
+            }
             return $keyNow-$keyOld;
         }
         return 0;
