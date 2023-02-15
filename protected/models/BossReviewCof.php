@@ -30,12 +30,6 @@ class BossReviewCof
             $keyOld = 0;
             $keyNow = 0;
             if(is_array($kpiList)){
-                if($class_id=="one_two"){
-                    var_dump($kpiRow["id"]);
-                    var_dump($price);
-                    var_dump($this->city);
-                    var_dump($kpiList);
-                }
                 $kpiList = $this->sortList($kpiList);
                 foreach ($kpiList as $key =>$list){
                     if(floatval($list["kpi_value"])==$cofOld){
@@ -45,12 +39,6 @@ class BossReviewCof
                         $keyNow = $key;
                     }
                 }
-            }
-            if($class_id=="one_two"){
-                var_dump($this->city);
-                var_dump($kpiList);
-                var_dump($keyNow);
-                var_dump($keyOld);
             }
             return $keyNow-$keyOld;
         }
