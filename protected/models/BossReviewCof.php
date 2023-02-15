@@ -31,6 +31,7 @@ class BossReviewCof
             $keyNow = 0;
             if(is_array($kpiList)){
                 if($class_id=="one_two"){
+                    var_dump($kpiRow["id"]);
                     var_dump($this->city);
                     var_dump($kpiList);
                 }
