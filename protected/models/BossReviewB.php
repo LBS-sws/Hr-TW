@@ -106,6 +106,9 @@ class BossReviewB extends BossReview
             case "two_service"://蔚诺租赁服务机器台数
                 $this->json_text[$type][$str] = $this->valueServiceNum($this->city,$this->audit_year-1);
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
+            case "two_air"://空气净化机租赁
+                $this->json_text[$type][$str] = $this->valueForOpr($this->city,$this->audit_year-1,"100055");
+                return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
         }
         $this->json_text[$type][$str] = 0;
         return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
@@ -178,6 +181,9 @@ class BossReviewB extends BossReview
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]."%");
             case "two_service"://蔚诺租赁服务机器台数
                 $this->json_text[$type][$str] = $this->valueServiceNum($this->city,$this->audit_year);
+                return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
+            case "two_air"://空气净化机租赁
+                $this->json_text[$type][$str] = $this->valueForOpr($this->city,$this->audit_year,"100055");
                 return array('value'=>$this->json_text[$type][$str],'name'=>$this->json_text[$type][$str]);
         }
         $this->json_text[$type][$str] = 0;

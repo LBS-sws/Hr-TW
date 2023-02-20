@@ -18,7 +18,8 @@ class BossSetBForm extends CFormModel
         array('value'=>'two_six','pro_str'=>"%",'percent'=>'5','show'=>'1'),//提交销售5步曲数量培训销售部分
         array('value'=>'two_nine','pro_str'=>"%",'percent'=>'5','show'=>'1'),//IA物料使用率
         array('value'=>'two_ten','pro_str'=>"%",'percent'=>'5','show'=>'1'),//IB物料使用率
-        array('value'=>'two_service','percent'=>'0','show'=>'1'),//蔚诺租赁服务机器台数
+        //array('value'=>'two_service','percent'=>'0','show'=>'1'),//蔚诺租赁服务机器台数(大陸版)
+        array('value'=>'two_air','percent'=>'0','show'=>'1'),//空气净化机租赁(台灣版)
     );
 /*    protected $listX = array(
         array('value'=>'two_one','name'=>Yii::t("contract","two_one")),//优化人才评核

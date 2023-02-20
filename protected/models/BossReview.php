@@ -368,7 +368,7 @@ class BossReview
         return $html;
     }
 
-    //提取月报表数据
+    //提取月报表数据（日報表系統）
     public function value($city,$year,$data_field){
         $sqlExpr = "";
         if(!empty($this->search_month)&&$this->audit_year==$year){
@@ -379,6 +379,23 @@ class BossReview
         $sum = Yii::app()->db->createCommand()->select("SUM(convert(a.data_value,decimal(18,2)))")
             ->from("swoper$suffix.swo_monthly_dtl a")
             ->leftJoin("swoper$suffix.swo_monthly_hdr b","b.id = a.hdr_id")
+            ->where("b.city = :city $sqlExpr AND b.year_no = :year AND a.data_field=:field",
+                array(":city"=>$city,":year"=>$year,":field"=>$data_field)
+            )->queryScalar();
+        return empty($sum)||$sum==null?0:$sum;
+    }
+
+    //提取月报表数据（營運系統）
+    public function valueForOpr($city,$year,$data_field){
+        $sqlExpr = "";
+        if(!empty($this->search_month)&&$this->audit_year==$year){
+            $sqlExpr=" and b.month_no<=$this->search_month ";
+        }
+        //$data_field 100055：空气净化机租赁
+        $suffix = Yii::app()->params['envSuffix'];
+        $sum = Yii::app()->db->createCommand()->select("SUM(convert(a.data_value,decimal(18,2)))")
+            ->from("operation$suffix.opr_monthly_dtl a")
+            ->leftJoin("operation$suffix.opr_monthly_hdr b","b.id = a.hdr_id")
             ->where("b.city = :city $sqlExpr AND b.year_no = :year AND a.data_field=:field",
                 array(":city"=>$city,":year"=>$year,":field"=>$data_field)
             )->queryScalar();
