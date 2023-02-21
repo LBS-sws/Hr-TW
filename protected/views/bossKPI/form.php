@@ -57,7 +57,7 @@ $this->pageTitle=Yii::app()->name . ' - Boss Apply Form';
 
             <div class="form-group">
                 <?php echo $form->labelEx($model,'kpi_name',array('class'=>"col-sm-2 control-label")); ?>
-                <div class="col-sm-2">
+                <div class="col-sm-4">
                     <?php echo $form->textField($model, 'kpi_name',
                         array('readonly'=>(true))
                     ); ?>

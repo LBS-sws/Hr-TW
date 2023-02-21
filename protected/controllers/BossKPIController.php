@@ -33,7 +33,7 @@ class BossKPIController extends Controller
                 'expression'=>array('BossKPIController','allowReadWrite'),
             ),
             array('allow',
-                'actions'=>array('index','view'),
+                'actions'=>array('index','view','addAir'),
                 'expression'=>array('BossKPIController','allowReadOnly'),
             ),
             array('deny',  // deny all users
@@ -48,6 +48,20 @@ class BossKPIController extends Controller
 
     public static function allowReadOnly() {
         return Yii::app()->user->validFunction('BA04');
+    }
+
+    public function actionAddAir(){
+        $sql = "select id from hr_kpi WHERE kpi_name='two_air'";
+        $typeRow = Yii::app()->db->createCommand($sql)->queryRow();
+        if(!$typeRow){
+            Yii::app()->db->createCommand()->insert('hr_kpi', array(
+                'kpi_name'=>"two_air",
+                'kpi_str'=>"空气净化机租赁及销售"
+            ));
+            echo "</br>add kpi name:two_air;</br>";
+        }
+        echo "</br>end;</br>";
+        Yii::app()->end();
     }
 
     public function actionIndex($pageNum=0){

@@ -724,6 +724,6 @@ return array(
     'remaining num'=>'剩餘數量',
     'sum num'=>'總計數量',
 //2023/02/20
-    'two_air'=>'空氣凈化機租賃',
+    'two_air'=>'空氣凈化機租賃及銷售',
     );
 ?>
