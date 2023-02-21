@@ -1,6 +1,6 @@
 <?php
 return array(
-	'Daily Report System'=>'日报表系统',
+	'Daily Report System'=>'日报表系统', 
 	'Daily Report System - UAT'=>'日报表系统 - 测试版',
 	'LBS Daily Management'=>'LBS 日常管理',
 	'LBS Daily Management - UAT'=>'LBS 日常管理 - 测试版',

@@ -730,5 +730,7 @@ return array(
     'remaining inventory'=>'剩余库存',
     'remaining num'=>'剩余数量',
     'sum num'=>'总计数量',
+//2023/02/20
+    'two_air'=>'空气净化机租赁',
 );
 ?>
