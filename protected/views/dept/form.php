@@ -18,6 +18,7 @@ $this->pageTitle=Yii::app()->name . ' - Dept Form';
 		<strong><?php echo $model->getTypeName().Yii::t('contract',' Form'); ?></strong>
 	</h1>
 <!--
+1
 	<ol class="breadcrumb">
 		<li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
 		<li><a href="#">Layout</a></li>
@@ -35,6 +36,9 @@ $this->pageTitle=Yii::app()->name . ' - Dept Form';
         <?php if ($model->scenario == "edit"): ?>
             <?php echo TbHtml::button('<span class="fa fa-file-o"></span> '.Yii::t('misc','Add'), array(
                 'submit'=>Yii::app()->createUrl('dept/new',array("type"=>$model->type))));
+            ?>
+            <?php echo TbHtml::button('<span class="fa fa-file-o"></span> '.Yii::t('misc','Copy'), array(
+                'submit'=>Yii::app()->createUrl('dept/copy',array("index"=>$model->id))));
             ?>
         <?php endif ?>
 
@@ -122,6 +126,11 @@ $this->pageTitle=Yii::app()->name . ' - Dept Form';
                         <p class="form-control-static">中央技术支援：如果是中央支援组的技术员，请选择服务</p>
                     </div>
                 </div>
+                <div class="form-group">
+                    <div class="col-sm-12 col-sm-offset-2 text-danger">
+                        <p class="form-control-static">职位类别为“服务”时参加人事系统的“襟章登记”及影响日报表系统的“月报表数据”，但一定不参加会计系统的“ID销售计算”</p>
+                    </div>
+                </div>
             <?php endif; ?>
             <?php if ($model->type==1): ?>
                 <div class="form-group">
@@ -203,6 +212,17 @@ $this->pageTitle=Yii::app()->name . ' - Dept Form';
                     </div>
                     <div class="col-sm-7">
                         <p class="form-control-static">销售系统专用，具体功能问销售系统负责人</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <?php echo $form->labelEx($model,'level_type',array('class'=>"col-sm-2 control-label")); ?>
+                    <div class="col-sm-4">
+                        <?php echo $form->dropDownList($model, 'level_type',DeptForm::getConditionList(),
+                            array('disabled'=>($model->scenario=='view'),"id"=>'manager_leave')
+                        ); ?>
+                    </div>
+                    <div class="col-sm-6">
+                        <p class="form-control-static">日报表系统 -> 技术员生成分析 的筛选条件</p>
                     </div>
                 </div>
             <?php endif; ?>

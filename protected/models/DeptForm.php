@@ -1,6 +1,7 @@
 <?php
 
 /**
+ *
  * UserForm class.
  * UserForm is the data structure for keeping
  * user form data. It is used by the 'user' action of 'SiteController'.
@@ -23,6 +24,7 @@ class DeptForm extends CFormModel
 	public $review_leave=0;
 	public $manager_type=0;
 	public $manager_leave=0;
+	public $level_type;
 	/**
 	 * Declares customized attribute labels.
 	 * If not declared here, an attribute would have a label that is
@@ -45,6 +47,7 @@ class DeptForm extends CFormModel
             'sales_type'=>Yii::t('contract','sales type'),
             'manager_type'=>Yii::t('contract','manager type'),
             'manager_leave'=>Yii::t('contract','manager leave'),
+            'level_type'=>Yii::t('fete','level type'),
 		);
 	}
 
@@ -55,7 +58,7 @@ class DeptForm extends CFormModel
 	{
 		return array(
 			//array('id, position, leave_reason, remarks, email, staff_type, leader','safe'),
-            array('id, name, sales_type, z_index, dept_id, type, dept_class, manager, technician, review_status, review_type, review_leave, manager_type, manager_leave','safe'),
+            array('id, name, level_type, sales_type, z_index, dept_id, type, dept_class, manager, technician, review_status, review_type, review_leave, manager_type, manager_leave','safe'),
 			array('name','required'),
 			array('review_leave','required'),
 			array('review_type','required'),
@@ -248,7 +251,7 @@ class DeptForm extends CFormModel
     }
 
     //獲取職位列表
-	public function getDeptListToCity($dept_id,$city=''){
+	public static function getDeptListToCity($dept_id,$city=''){
 	    $sql = "";
 	    if(!empty($dept_id)&&is_numeric($dept_id)){
 	        $sql = " or id='$dept_id'";
@@ -268,7 +271,7 @@ class DeptForm extends CFormModel
     }
 
     //是否是銷售部門  0：不是  1：是銷售部
-	public function getSalesTypeToId($dept_id){
+	public static function getSalesTypeToId($dept_id){
         $rows = Yii::app()->db->createCommand()->select()->from("hr_dept")
             ->where("id=:id",array(":id"=>$dept_id))->queryRow();
         if ($rows){
@@ -308,7 +311,7 @@ class DeptForm extends CFormModel
         return $arr;
     }
     //獲取職位名字
-	public function getDeptToId($dept_id){
+	public static function getDeptToId($dept_id){
         $rows = Yii::app()->db->createCommand()->select()->from("hr_dept")
             ->where('id=:id', array(':id'=>$dept_id))->queryRow();
         if ($rows){
@@ -330,6 +333,30 @@ class DeptForm extends CFormModel
             return false;
         }
         return true;
+    }
+
+    //level_type
+    public static function getConditionList(){
+        return array(
+            ""=>"",
+            1=>Yii::t("fete","Technician level"),
+            2=>Yii::t("fete","Technical supervisor"),
+            3=>Yii::t("fete","Other personnel"),
+        );
+    }
+
+    //level_type
+    public static function getConditionNameForId($id){
+        $list = array(
+            ""=>"",
+            1=>Yii::t("fete","Tec level"),
+            2=>Yii::t("fete","Tec supervisor"),
+            3=>Yii::t("fete","Other personnel"),
+        );
+        if(key_exists($id,$list)){
+            return $list[$id];
+        }
+        return $id;
     }
 
 	public function retrieveData($index)
@@ -356,6 +383,7 @@ class DeptForm extends CFormModel
                 $this->review_leave = $row['review_leave'];
                 $this->manager_type = $row['manager_type'];
                 $this->manager_leave = $row['manager_leave'];
+                $this->level_type = $row['level_type'];
 				break;
 			}
 		}
@@ -388,9 +416,9 @@ class DeptForm extends CFormModel
 				break;
 			case 'new':
 				$sql = "insert into hr_dept(
-							name, type, sales_type, z_index, manager_type, manager_leave, dept_id, city, dept_class, manager, technician, review_status, review_type, review_leave, lcu
+							name, type, level_type, sales_type, z_index, manager_type, manager_leave, dept_id, city, dept_class, manager, technician, review_status, review_type, review_leave, lcu
 						) values (
-							:name, :type, :sales_type, :z_index, :manager_type, :manager_leave, :dept_id, :city, :dept_class, :manager, :technician, :review_status, :review_type, :review_leave, :lcu
+							:name, :type, :level_type, :sales_type, :z_index, :manager_type, :manager_leave, :dept_id, :city, :dept_class, :manager, :technician, :review_status, :review_type, :review_leave, :lcu
 						)";
 				break;
 			case 'edit':
@@ -409,6 +437,7 @@ class DeptForm extends CFormModel
 							review_type = :review_type,
 							review_leave = :review_leave,
 							sales_type = :sales_type,
+							level_type = :level_type,
 							luu = :luu 
 						where id = :id
 						";
@@ -428,6 +457,8 @@ class DeptForm extends CFormModel
 			$command->bindParam(':type',$this->type,PDO::PARAM_INT);
 		if (strpos($sql,':sales_type')!==false)
 			$command->bindParam(':sales_type',$this->sales_type,PDO::PARAM_INT);
+		if (strpos($sql,':level_type')!==false)
+			$command->bindParam(':level_type',$this->level_type,PDO::PARAM_INT);
 		if (strpos($sql,':dept_class')!==false)
 			$command->bindParam(':dept_class',$this->dept_class,PDO::PARAM_STR);
 		if (strpos($sql,':manager')!==false)
