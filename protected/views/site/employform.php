@@ -82,7 +82,7 @@
     <?php echo $form->label($model,'user_card',array('class'=>"col-sm-2 control-label","required"=>true)); ?>
     <div class="col-sm-3">
         <?php echo $form->textField($model, 'user_card',
-            array('readonly'=>($readonly))
+            array('readonly'=>($readonly),'id'=>'user_card')
         ); ?>
     </div>
     <?php echo $form->labelEx($model,'user_card_date',array('class'=>"col-sm-2 control-label")); ?>
@@ -135,6 +135,13 @@
     <div class="col-sm-3">
         <?php echo $form->textField($model, 'empoyment_code',
             array('readonly'=>($readonly))
+        ); ?>
+    </div>
+    <!--分割-->
+    <?php echo $form->labelEx($model,'recommend_user',array('class'=>"col-sm-2 control-label")); ?>
+    <div class="col-sm-3">
+        <?php echo $form->dropDownList($model, 'recommend_user',EmployForm::getEmployeeList($model->recommend_user),
+            array('disabled'=>($readonly),'id'=>'recommend_user')
         ); ?>
     </div>
 </div>
@@ -281,6 +288,14 @@
     <div class="col-sm-3">
         <?php echo $form->textField($model, 'code_old',
             array('readonly'=>($readonly))
+        ); ?>
+    </div>
+</div>
+<div class="form-group">
+    <?php echo $form->labelEx($model,'office_id',array('class'=>"col-sm-2 control-label")); ?>
+    <div class="col-sm-3">
+        <?php echo $form->dropDownList($model, 'office_id',ConfigOfficeForm::getOfficeList($model->city,$model->office_id),
+            array('readonly'=>($readonly),"id"=>"office_id")
         ); ?>
     </div>
 </div>
@@ -471,7 +486,7 @@ if (!empty($contractNum)){
 
 <legend><?php echo Yii::t("contract","archives");?></legend>
 <div class="form-group">
-    <?php echo $form->labelEx($model,'image_user',array('class'=>"col-sm-2 control-label")); ?>
+    <?php echo $form->label($model,'image_user',array('class'=>"col-sm-2 control-label",'required'=>true)); ?>
     <div class="col-sm-3">
         <?php
         if($readonly){
@@ -496,7 +511,7 @@ if (!empty($contractNum)){
     </div>
 </div>
 <div class="form-group">
-    <?php echo $form->labelEx($model,'image_code',array('class'=>"col-sm-2 control-label")); ?>
+    <?php echo $form->label($model,'image_code',array('class'=>"col-sm-2 control-label",'required'=>true)); ?>
     <div class="col-sm-3">
         <?php
         if($readonly){
@@ -573,6 +588,12 @@ if (!empty($contractNum)){
 
 <script>
     $(function ($) {
+        <?php
+            if(!$readonly){
+                echo '$("#recommend_user").select2({ multiple:false});';
+            }
+        ?>
+
         $("body").append('<div class="modal fade text-center" style="padding-top: 30px;" id="bigImgDiv"></div>');
         $("body").delegate(".openBigImg,.fileImgShow img","click",function () {
             var imgSrc = $(this).attr("src");
@@ -635,9 +656,14 @@ if (!empty($contractNum)){
                                 $(".group_type").hide();
                             }
                         }else if(type=="change_city"){
-                            $("#department,#position").html("<option value=''></option>");
+                            var officeList = data.office;
+                            $("#department,#position").html("<option selected value=''></option>");
+                            $("#office_id").html("");
                             for(var key in jsonList){
                                 $("#department").append("<option value='"+key+"'>"+jsonList[key]+"</option>");
+                            }
+                            for(var key in officeList){
+                                $("#office_id").append("<option value='"+key+"'>"+officeList[key]+"</option>");
                             }
                             if(data.sales_type == 1){
                                 $(".group_type").show();
@@ -656,6 +682,42 @@ if (!empty($contractNum)){
         //$("#position").trigger("change");
         //後續添加的无用要求
         $(".fixTime,#start_time,#end_time").change(changeTestMonthLength);
+
+        //身份證號碼檢索
+        $("#user_card").keyup(function () {
+           var value = $(this).val()+"";
+           var id = '<?php echo $model->id;?>'
+           if(value.length>=6){
+               $.ajax({
+                   type: 'post',
+                   url: '<?php echo Yii::app()->createUrl('employ/changeUserCard');?>',
+                   data: {
+                       id: id,
+                       userCard: value
+                   },
+                   dataType: 'json',
+                   success: function (data) {
+                        if(data["status"]==1){
+                            $('#userCardHint').remove();
+                            $('body').append(data["html"]);
+                            var width =$('#userCardHint').show().outerWidth(true);
+                            var left = $('#user_card').outerWidth(true)/2+$('#user_card').offset().left;
+                            var top = $('#user_card').outerHeight(true)+$('#user_card').offset().top+2;
+                            left-=width/2;
+                            $('#userCardHint').css({
+                                "left":left+"px",
+                                "top":top+"px"
+                            });
+                        }
+                   }
+               });
+           }else{
+               $('#userCardHint').remove();
+           }
+        });
+        $("#user_card").focusout(function () {
+            $('#userCardHint').remove();
+        });
     });
     function changeTestMonthLength() {
         var value = $("#test_length").val();
@@ -666,6 +728,7 @@ if (!empty($contractNum)){
             $("#test_length>option[value='']").show();
             var startDate = new Date($("#start_time").val());
             var endDate = new Date($("#end_time").val());
+            endDate.setDate(endDate.getDate()+1);;
             var Year = endDate.getFullYear()-startDate.getFullYear();
             var Month = endDate.getMonth()-startDate.getMonth();
             var dateLeng = Year*12+Month;

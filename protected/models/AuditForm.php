@@ -72,7 +72,9 @@ class AuditForm extends CFormModel
     public $code_old;//員工編號（舊）
     public $group_type;//員工編號（舊）
     public $wechat;//微信賬號
+    public $recommend_user;//推荐人
     public $urgency_card;//緊急聯繫人身份證
+    public $office_id;//办事处id
     public $no_of_attm = array(
         'employ'=>0
     );
@@ -149,7 +151,9 @@ class AuditForm extends CFormModel
             'code_old'=>Yii::t('contract','Code Old'),
             'group_type'=>Yii::t('contract','group type'),
             'wechat'=>Yii::t('contract','wechat'),
+            'recommend_user'=>Yii::t('contract','recommend user'),
             'urgency_card'=>Yii::t('contract','urgency card'),
+            'office_id'=>Yii::t('contract','staff office'),
 		);
 	}
 
@@ -161,14 +165,26 @@ class AuditForm extends CFormModel
 	{
 		return array(
 			//array('id, position, leave_reason, remarks, email, staff_type, leader','safe'),
-            array('id, group_type, code, name, staff_id, company_id, contract_id, address, address_code, contact_address, contact_address_code, phone, phone2, user_card, department, position, wage,time,
+            array('id, group_type,office_id, code, name, staff_id, company_id, contract_id, address, address_code, contact_address, contact_address_code, phone, phone2, user_card, department, position, wage,time,
              start_time, end_time, test_type, test_start_time, sex, test_end_time, test_wage, word_status, city, entry_time, age, birth_time, health,ject_remark,staff_status,
               education, experience, english, technology, other, year_day, email, remark, image_user, image_code, image_work, image_other, code_old,
                test_length,staff_type,staff_leader,attachment,nation, household, empoyment_code, social_code, fix_time',
                 'safe'),
 			array('ject_remark','required',"on"=>"reject"),
+            array('id','validateID'),
 		);
 	}
+    public function validateID($attribute, $params){
+        $city_allow = Yii::app()->user->city_allow();
+        $row = Yii::app()->db->createCommand()->select("city")->from("hr_employee")
+            ->where("id=:id and city in ($city_allow) and staff_status=2",array(':id'=>$this->id))->queryRow();
+        if($row){
+            $this->city = $row["city"];
+        }else{
+            $message = "审核单不存在或已审核，请刷新重试";
+            $this->addError($attribute,$message);
+        }
+    }
 
     //獲取可用公司
     public function getCompanyToCity(){
@@ -271,7 +287,9 @@ class AuditForm extends CFormModel
                 $this->code_old = $row['code_old'];
                 $this->group_type = $row['group_type'];
                 $this->wechat = $row['wechat'];
+                $this->recommend_user = $row['recommend_user'];
                 $this->urgency_card = $row['urgency_card'];
+                $this->office_id = $row['office_id'];
 				break;
 			}
 		}
@@ -345,7 +363,9 @@ class AuditForm extends CFormModel
 	}
 
     private function signContract(){
-        if($this->getScenario() == "audit"){
+        $signedContractType = Yii::app()->db->createCommand()->select("set_value")->from("hr_setting")
+            ->where('set_name="signedContractType" and set_city=:city',array(":city"=>$this->city))->queryScalar();
+        if(empty($signedContractType)&&$this->getScenario() == "audit"){
             Yii::app()->db->createCommand()->insert('hr_sign_contract',array(
                 'employee_id'=>$this->id,
                 'status_type'=>0,
@@ -369,6 +389,7 @@ class AuditForm extends CFormModel
             $message.="<p>员工姓名：".$row["name"]."</p>";
             $message.="<p>员工所在城市：".CGeneral::getCityName($row["city"])."</p>";
             $message.="<p>员工入职日期：".$row["entry_time"]."</p>";
+            $message.="<p>员工职位：".DeptForm::getDeptToId($row["position"])."</p>";
             $message.="<p>审核日期：".date('Y-m-d H:i:s')."</p>";
             if ($this->getScenario() == "reject"){
                 $message.="<p>拒绝原因：".$this->ject_remark."</p>";

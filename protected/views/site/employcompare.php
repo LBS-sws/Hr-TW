@@ -137,6 +137,13 @@
             array('readonly'=>($readonly))
         ); ?>
     </div>
+    <!--分割-->
+    <?php echo $form->labelEx($model,'recommend_user',array('class'=>"col-sm-2 control-label")); ?>
+    <div class="col-sm-3">
+        <?php echo $form->textFieldCompare($oldModel,$model, 'recommend_user',
+            array('size'=>18,'maxlength'=>18,'readonly'=>($readonly))
+        ); ?>
+    </div>
 </div>
 <div class="form-group">
     <?php echo $form->labelEx($model,'nation',array('class'=>"col-sm-2 control-label")); ?>
@@ -280,6 +287,14 @@
     <?php echo $form->labelEx($model,'code_old',array('class'=>"col-sm-2 control-label")); ?>
     <div class="col-sm-3">
         <?php echo $form->textFieldCompare($oldModel,$model, 'code_old',
+            array('readonly'=>($readonly))
+        ); ?>
+    </div>
+</div>
+<div class="form-group">
+    <?php echo $form->labelEx($model,'office_id',array('class'=>"col-sm-2 control-label")); ?>
+    <div class="col-sm-3">
+        <?php echo $form->dropDownListCompare($oldModel,$model, 'office_id',ConfigOfficeForm::getOfficeList($model->city,$model->office_id),
             array('readonly'=>($readonly))
         ); ?>
     </div>

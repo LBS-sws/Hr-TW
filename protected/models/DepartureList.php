@@ -22,6 +22,7 @@ class DepartureList extends CListPageModel
 			'city'=>Yii::t('contract','City'),
 			'city_name'=>Yii::t('contract','City'),
             'entry_time'=>Yii::t('contract','Entry Time'),
+            'office_name'=>Yii::t('contract','staff office'),
 		);
 	}
 
@@ -30,31 +31,37 @@ class DepartureList extends CListPageModel
 		$suffix = Yii::app()->params['envSuffix'];
 		$city = Yii::app()->user->city();
         $city_allow = Yii::app()->user->city_allow();
-		$sql1 = "select * from hr_employee
-                where city in ($city_allow) AND staff_status = -1
+        $localOffice = Yii::t("contract","local office");
+		$sql1 = "select a.*,if(f.name=0 or f.name is null,'{$localOffice}',f.name) as office_name from hr_employee a
+                LEFT JOIN hr_office f ON f.id=a.office_id
+                where a.city in ($city_allow) AND a.staff_status = -1
 			";
-		$sql2 = "select count(id)
-				from hr_employee 
-				where city in ($city_allow) AND staff_status = -1
+		$sql2 = "select count(a.id)
+				from hr_employee a
+                LEFT JOIN hr_office f ON f.id=a.office_id
+				where a.city in ($city_allow) AND a.staff_status = -1
 			";
 		$clause = "";
 		if (!empty($this->searchField) && !empty($this->searchValue)) {
 			$svalue = str_replace("'","\'",$this->searchValue);
 			switch ($this->searchField) {
 				case 'name':
-					$clause .= General::getSqlConditionClause('name',$svalue);
+					$clause .= General::getSqlConditionClause('a.name',$svalue);
 					break;
 				case 'code':
-					$clause .= General::getSqlConditionClause('code',$svalue);
+					$clause .= General::getSqlConditionClause('a.code',$svalue);
 					break;
 				case 'phone':
-					$clause .= General::getSqlConditionClause('phone',$svalue);
+					$clause .= General::getSqlConditionClause('a.phone',$svalue);
+					break;
+				case 'office_name':
+					$clause .= General::getSqlConditionClause("if(f.name=0 or f.name is null,'{$localOffice}',f.name)",$svalue);
 					break;
                 case 'position':
-                    $clause .= ' and position in '.DeptForm::getDeptSqlLikeName($svalue);
+                    $clause .= ' and a.position in '.DeptForm::getDeptSqlLikeName($svalue);
                     break;
                 case 'city_name':
-                    $clause .= ' and city in '.WordForm::getCityCodeSqlLikeName($svalue);
+                    $clause .= ' and a.city in '.WordForm::getCityCodeSqlLikeName($svalue);
                     break;
 			}
 		}
@@ -64,7 +71,7 @@ class DepartureList extends CListPageModel
 			$order .= " order by ".$this->orderField." ";
 			if ($this->orderType=='D') $order .= "desc ";
 		}else{
-            $order .= " order by id desc ";
+            $order .= " order by a.id desc ";
         }
 
 		$sql = $sql2.$clause;
@@ -83,6 +90,7 @@ class DepartureList extends CListPageModel
 					'id'=>$record['id'],
 					'name'=>$record['name'],
 					'code'=>$record['code'],
+					'office_name'=>$record['office_name'],
                     'position'=>DeptForm::getDeptToid($record['position']),
 					'company_id'=>CompanyForm::getCompanyToId($record['company_id'])["name"],
 					//'contract_id'=>ContractForm::getContractNameToId($record['contract_id']),

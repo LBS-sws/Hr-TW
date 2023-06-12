@@ -205,6 +205,18 @@ return array(
     'Pin Name'=>'襟章名称',
     'Pin Table'=>'襟章发放统计表',
     'Pin Report'=>'襟章明细报表',
+    'Boss Audit Plan Report'=>'老总年度考核进度报表',
+    'Treaty Hint'=>'提醒小助手',
+    'Treaty Service'=>'使用中的项目',
+    'Treaty Stop'=>'已停止的项目',
+    'Show all treaty hint'=>'显示所有提醒小助手',
+    'Show all recruit'=>'显示所有招聘登记',
+    'recruit apply'=>'招聘登记',
+    'recruit summary'=>'招聘进度汇总',
+    'staff summary'=>'部门人数统计',
+    'household Search'=>'员工户籍查询',
+    'Show all household Search'=>'显示所有员工户籍查询',
+    'Config office'=>'办事处设置',
     //沈超添加结束
 );
 ?>

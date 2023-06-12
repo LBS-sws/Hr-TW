@@ -32,7 +32,11 @@ $this->pageTitle=Yii::app()->name . ' - History Form';
     <div class="box"><div class="box-body">
             <div class="btn-group" role="group">
                 <?php
-                $url = Yii::app()->createUrl('history/index');
+                if(isset($back_type)&&!empty($back_type)){
+                    $url = Yii::app()->createUrl('employee/edit',array('index'=>$model->employee_id));
+                }else{
+                    $url = Yii::app()->createUrl('history/index');
+                }
                 echo TbHtml::button('<span class="fa fa-reply"></span> '.Yii::t('misc','Back'), array(
                     'submit'=>$url));
                 ?>
@@ -157,7 +161,7 @@ $this->pageTitle=Yii::app()->name . ' - History Form';
                     ); ?>
                 </div>
             </div>
-            <?php if ($model->scenario=='departure'||!empty($model->leave_time)): ?>
+            <?php if ($model->scenario=='departure'||$model->operation=='departure'): ?>
                 <div class="form-group">
                     <?php echo $form->labelEx($model,'leave_time',array('class'=>"col-sm-2 control-label")); ?>
                     <div class="col-sm-3">

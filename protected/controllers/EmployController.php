@@ -37,7 +37,7 @@ class EmployController extends Controller
                 'expression'=>array('EmployController','allowReadOnly'),
             ),
             array('allow',
-                'actions'=>array('generate','addDate','printImage','changeDepart'),
+                'actions'=>array('generate','addDate','printImage','changeDepart','changeUserCard'),
                 'expression'=>array('EmployController','allowWrite'),
             ),
             array('deny',  // deny all users
@@ -242,6 +242,19 @@ class EmployController extends Controller
         }
     }
 
+    //身份證號碼
+    public function actionChangeUserCard(){
+        if(Yii::app()->request->isAjaxRequest) {//是否ajax请求
+            $id = Yii::app()->request->getPost('id',"");
+            $userCard = Yii::app()->request->getPost('userCard',"666666");
+            $model = new EmployForm();
+            $json =$model->changeUserCard($id,$userCard);
+            echo CJSON::encode($json);
+        }else{
+            $this->redirect(Yii::app()->createUrl('employ/index'));
+        }
+    }
+
     //職位
     public function actionChangeDepart(){
         if(Yii::app()->request->isAjaxRequest) {//是否ajax请求
@@ -264,6 +277,7 @@ class EmployController extends Controller
                 $data = $model->getDeptListToCity("",$change_city);
                 unset($data[""]);
                 $json["data"] = $data;
+                $json["office"] = ConfigOfficeForm::getOfficeList($change_city);
                 reset($data);
                 $department = key($data);
                 $json["sales_type"] = $model->getSalesTypeToId($department);

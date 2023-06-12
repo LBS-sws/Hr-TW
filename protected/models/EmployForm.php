@@ -74,8 +74,10 @@ class EmployForm extends CFormModel
     public $emergency_phone;//紧急联络人手机号
     public $code_old;//員工編號（舊）
     public $group_type;//組別類型
+    public $office_id;//办事处id
 
     public $wechat;//微信賬號
+    public $recommend_user;//推荐人
     public $urgency_card;//緊急聯繫人身份證
 
     public $no_of_attm = array(
@@ -157,7 +159,9 @@ class EmployForm extends CFormModel
             'code_old'=>Yii::t('contract','Code Old'),
             'group_type'=>Yii::t('contract','group type'),
             'wechat'=>Yii::t('contract','wechat'),
+            'recommend_user'=>Yii::t('contract','recommend user'),
             'urgency_card'=>Yii::t('contract','urgency card'),
+            'office_id'=>Yii::t('contract','staff office'),
 		);
 	}
 	/**
@@ -168,9 +172,9 @@ class EmployForm extends CFormModel
 	{
 		return array(
 			//array('id, position, leave_reason, remarks, email, staff_type, leader','safe'),
-            array('id, group_type code, name, staff_id, company_id, contract_id, address, address_code, contact_address, contact_address_code, phone, phone2, user_card, department, position, wage,time,
+            array('id, group_type,office_id,code, name, staff_id, company_id, contract_id, address, address_code, contact_address, contact_address_code, phone, phone2, user_card, department, position, wage,time,
              start_time, end_time, test_type, test_start_time, sex, test_end_time, test_wage, word_status, city, entry_time, age, birth_time, health, ject_remark, staff_status,
-              education,wechat,urgency_card, experience, english, technology, other, year_day, email, remark, image_user, image_code, image_work, image_other, fix_time, code_old,
+              education,wechat,recommend_user,urgency_card, experience, english, technology, other, year_day, email, remark, image_user, image_code, image_work, image_other, fix_time, code_old,
                test_length,staff_type,staff_leader,attachment,nation, household, empoyment_code, social_code, user_card_date, emergency_user, emergency_phone',
                 'safe'),
 			array('entry_time,emergency_user,emergency_phone','required','on'=>"audit"),
@@ -196,6 +200,8 @@ class EmployForm extends CFormModel
 			array('test_type','validateTestType','on'=>"audit"),
 			array('year_day','required','on'=>"audit"),
             array('year_day', 'validateYearDay','on'=>"audit"),
+            array('image_user','required','on'=>"audit"),
+            array('image_code','required','on'=>"audit"),
             array('files, removeFileId, docMasterId, no_of_attm','safe'),
 		);
 	}
@@ -333,6 +339,44 @@ class EmployForm extends CFormModel
         }
         return "";
     }
+    //根據id獲取員列表
+    public static function getEmployeeList($id=0){
+        $city = Yii::app()->user->city();
+        $arr = array(""=>"");
+        $rows = Yii::app()->db->createCommand()->select("id,code,name")->from("hr_employee")
+            ->where('id=:id or city=:city ', array(':id'=>$id,':city'=>$city))->order("name asc")->queryAll();
+        if($rows){
+            foreach ($rows as $row){
+                $arr[$row['id']] = $row["name"]." ({$row['code']})";
+            }
+        }
+        return $arr;
+    }
+    //根據id獲取員列表
+    public function changeUserCard($id,$userCard){
+        $userCard="".$userCard;
+        $userCard= strlen($userCard)>5?$userCard:"666666";
+        $userCard = substr($userCard,0,6);
+        $data = array('status'=>0,'html'=>'');
+        $city = Yii::app()->user->city();
+        $rows = Yii::app()->db->createCommand()->select("id,code,name,user_card,address")->from("hr_employee")
+            ->where("id!=:id and user_card like '{$userCard}%' and city=:city", array(':id'=>$id,':city'=>$city))->order("name asc")->queryAll();
+        if($rows){
+            $data['status'] = 1;
+            $data['html'] = '<div class="popover fade bottom in" id="userCardHint">';
+            $data['html'].= '<div class="arrow"></div>';
+            $data['html'].= '<div class="popover-title">户籍相似的员工</div><div class="popover-content">';
+            $html="";
+            foreach ($rows as $row){
+                $html.=!empty($html)?"<p style='margin-bottom: 0px;'>---------------------------------------</p>":"";
+                $html.= "<p style='margin-bottom: 0px;'>员工姓名:{$row['name']} - {$row['code']}</p>";
+                $html.= "<p style='margin-bottom: 0px;'>户籍地址:{$row['address']}</p>";
+                $html.= "<p style='margin-bottom: 0px;'>身份证号:{$row['user_card']}</p>";
+            }
+            $data['html'].= $html.'</div></div>';
+        }
+        return $data;
+    }
 
 	public function retrieveData($index)
 	{
@@ -405,7 +449,9 @@ class EmployForm extends CFormModel
                 $this->code_old = $row['code_old'];
                 $this->group_type = $row['group_type'];
                 $this->wechat = $row['wechat'];
+                $this->recommend_user = $row['recommend_user'];
                 $this->urgency_card = $row['urgency_card'];
+                $this->office_id = $row['office_id'];
 				break;
 			}
 		}
@@ -478,13 +524,13 @@ class EmployForm extends CFormModel
 				break;
 			case 'new':
 				$sql = "insert into hr_employee(
-							name,wechat,urgency_card, sex, attachment, group_type, staff_id, company_id, contract_id, city, address, contact_address, phone, user_card, department, position, wage, start_time, end_time, test_type, test_end_time, test_start_time,
+							name,recommend_user,wechat,urgency_card, sex, attachment, group_type, staff_id, company_id, contract_id, city, address, contact_address, phone, user_card, department, position, wage, start_time, end_time, test_type, test_end_time, test_start_time,
 							 test_wage,phone2,address_code,contact_address_code,entry_time,birth_time,age,health,education,experience,english,technology,other,year_day,fix_time,user_card_date,emergency_user,emergency_phone,code_old,
-							 email,remark,image_user,image_code,image_work,image_other,staff_status,staff_leader,test_length,staff_type,lcu, nation, household, empoyment_code, social_code
+							 email,office_id,remark,image_user,image_code,image_work,image_other,staff_status,staff_leader,test_length,staff_type,lcu, nation, household, empoyment_code, social_code
 						) values (
-							:name,:wechat,:urgency_card, :sex, :attachment, :group_type, :staff_id, :company_id, :contract_id, :city, :address, :contact_address, :phone, :user_card, :department, :position, :wage, :start_time, :end_time, :test_type, :test_end_time, :test_start_time,
+							:name,:recommend_user,:wechat,:urgency_card, :sex, :attachment, :group_type, :staff_id, :company_id, :contract_id, :city, :address, :contact_address, :phone, :user_card, :department, :position, :wage, :start_time, :end_time, :test_type, :test_end_time, :test_start_time,
 							 :test_wage,:phone2,:address_code,:contact_address_code,:entry_time,:birth_time,:age,:health,:education,:experience,:english,:technology,:other,:year_day,:fix_time,:date_user_card,:emergency_user,:emergency_phone,:code_old,
-							 :email,:remark,:image_user,:image_code,:image_work,:image_other,1,:staff_leader,:test_length,:staff_type,:lcu, :nation, :household, :empoyment_code, :social_code
+							 :email,:office_id,:remark,:image_user,:image_code,:image_work,:image_other,1,:staff_leader,:test_length,:staff_type,:lcu, :nation, :household, :empoyment_code, :social_code
 						)";
 				break;
 			case 'edit':
@@ -541,7 +587,9 @@ class EmployForm extends CFormModel
 							code_old = :code_old,
 							group_type = :group_type,
 							wechat = :wechat,
+							recommend_user = :recommend_user,
 							urgency_card = :urgency_card,
+							office_id = :office_id,
 							luu = :luu 
 						where id = :id
 						";
@@ -556,6 +604,10 @@ class EmployForm extends CFormModel
 		$command=$connection->createCommand($sql);
 		if (strpos($sql,':id')!==false)
 			$command->bindParam(':id',$this->id,PDO::PARAM_INT);
+		if (strpos($sql,':office_id')!==false){
+            $this->office_id = empty($this->office_id)?0:$this->office_id;
+            $command->bindParam(':office_id',$this->office_id,PDO::PARAM_INT);
+        }
         if (strpos($sql,':code_old')!==false)
             $command->bindParam(':code_old',$this->code_old,PDO::PARAM_STR);
 		if (strpos($sql,':sex')!==false)
@@ -676,6 +728,8 @@ class EmployForm extends CFormModel
             $command->bindParam(':emergency_phone',$this->emergency_phone,PDO::PARAM_STR);
         if (strpos($sql,':wechat')!==false)
             $command->bindParam(':wechat',$this->wechat,PDO::PARAM_STR);
+        if (strpos($sql,':recommend_user')!==false)
+            $command->bindParam(':recommend_user',$this->recommend_user,PDO::PARAM_STR);
         if (strpos($sql,':urgency_card')!==false)
             $command->bindParam(':urgency_card',$this->urgency_card,PDO::PARAM_STR);
 
@@ -726,6 +780,7 @@ class EmployForm extends CFormModel
         $message="<p>员工编号：".$this->code."</p>";
         $message.="<p>员工姓名：".$this->name."</p>";
         $message.="<p>员工所在城市：".Yii::app()->user->city_name()."</p>";
+        $message.="<p>员工职位：".DeptForm::getDeptToId($this->position)."</p>";
         $message.="<p>员工入职日期：".$this->entry_time."</p>";
         $email = new Email($subject,$message,$description);
         $email->addEmailToPrefix("ZG01");

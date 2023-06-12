@@ -81,9 +81,12 @@ class HistoryForm extends CFormModel
     public $code_old;//員工編號（舊）
     public $group_type;//組別類型
     public $effect_time;//生效日期
+    public $operation;//
 
     public $wechat;//微信賬號
+    public $recommend_user;//推荐人
     public $urgency_card;//緊急聯繫人身份證
+    public $office_id;//办事处id
     public $no_of_attm = array(
         'employee'=>0,
         'employ'=>0
@@ -173,9 +176,11 @@ class HistoryForm extends CFormModel
             'group_type'=>Yii::t('contract','group type'),
             'effect_time'=>Yii::t('contract','Effect Time'),
             'wechat'=>Yii::t('contract','wechat'),
+            'recommend_user'=>Yii::t('contract','recommend user'),
             'urgency_card'=>Yii::t('contract','urgency card'),
             'address_code'=>Yii::t('contract','Old Address').Yii::t('contract','postcode'),
             'contact_address_code'=>Yii::t('contract','Contact Address').Yii::t('contract','postcode'),
+            'office_id'=>Yii::t('contract','staff office'),
 		);
 	}
 
@@ -186,8 +191,8 @@ class HistoryForm extends CFormModel
 	{
 		return array(
 			//array('id, position, leave_reason, remarks, email, staff_type, leader','safe'),
-            array('id,group_type,employee_id,update_remark, code, name, staff_id, company_id, contract_id, address, address_code, contact_address, contact_address_code, phone, phone2, user_card, department, position, wage,time,
-             start_time,wechat,urgency_card, end_time, test_type, test_start_time, sex, test_end_time, test_wage, word_status, city, entry_time, age, birth_time, health,staff_status,user_card_date,emergency_user,emergency_phone,
+            array('id,group_type,office_id,employee_id,update_remark, code, name, staff_id, company_id, contract_id, address, address_code, contact_address, contact_address_code, phone, phone2, user_card, department, position, wage,time,
+             start_time,wechat,recommend_user,urgency_card, end_time, test_type, test_start_time, sex, test_end_time, test_wage, word_status, city, entry_time, age, birth_time, health,staff_status,user_card_date,emergency_user,emergency_phone,
              ld_card, sb_card, jj_card,test_length,staff_type,staff_leader,attachment,nation, household, empoyment_code, social_code, fix_time, opr_type, leave_reason, leave_time, code_old,
               education, experience, english, technology, other, year_day, email, remark, image_user, image_code, image_work, image_other, effect_time, change_city',
                 'safe'),
@@ -221,10 +226,15 @@ class HistoryForm extends CFormModel
 			array('test_type','validateTestType'),
             array('year_day','required'),
             array('year_day', 'validateYearDay'),
-            array('employee_id', 'validateSign'),
+            array('office_id','companyOffice',"on"=>"departure"),
+            //array('employee_id', 'validateSign'),//2023/01/16不需要此驗證
             array('files, removeFileId, docMasterId, no_of_attm','safe'),
 		);
 	}
+
+    public function companyOffice($attribute, $params){
+	    $this->office_id=0;
+    }
 
     public function validateSign($attribute, $params){
 	    if(!in_array($this->scenario,array("departure","update"))){
@@ -384,6 +394,7 @@ class HistoryForm extends CFormModel
             }
             $rows = Yii::app()->db->createCommand()->select("*,docman$suffix.countdoc('EMPLOY',id) as employdoc")->from("hr_employee")
                 ->where("id=:id and city in ($city_allow) and staff_status=0", array(':id'=>$index))->queryAll();
+            //var_dump($rows[0]["employdoc"]);
         }else{
             $rows = Yii::app()->db->createCommand()->select("*,docman$suffix.countdoc('EMPLOYEE',id) as employeedoc")->from("hr_employee_operate")
                 ->where('id=:id', array(':id'=>$index))->queryAll();
@@ -469,9 +480,12 @@ class HistoryForm extends CFormModel
                 $this->emergency_phone = $row['emergency_phone'];
                 $this->code_old = $row['code_old'];
                 $this->group_type = $row['group_type'];
+                $this->office_id = $row['office_id'];
                 $this->wechat = $row['wechat'];
                 $this->urgency_card = $row['urgency_card'];
+                $this->operation=key_exists("operation",$row)?$row["operation"]:"";
                 $this->change_city = empty($row['change_city'])?$row['city']:$row['change_city'];
+                $this->recommend_user = key_exists("recommend_user",$row)?AuditHistoryForm::getEmployeeNameToId($row['recommend_user']):"";
                 if($this->staff_status == 1 || $this->staff_status == 3){
                     $this->scenario = $row['operation'];
                 }
@@ -585,6 +599,7 @@ class HistoryForm extends CFormModel
             $message="<p>员工编号：".$row["code"]."</p>";
             $message.="<p>员工姓名：".$row["name"]."</p>";
             $message.="<p>员工所在城市：".CGeneral::getCityName($row["city"])."</p>";
+            $message.="<p>员工职位：".DeptForm::getDeptToId($row["position"])."</p>";
             $message.="<p>要求审核日期：".date('Y-m-d H:i:s')."</p>";
             $message.="<p>操作备注：".$row["update_remark"]."</p>";
             $email = new Email($subject,$message,$description);
@@ -607,7 +622,7 @@ class HistoryForm extends CFormModel
         $connection = Yii::app()->db;
         $uid = Yii::app()->user->id;
         $suffix = Yii::app()->params['envSuffix'];
-        $sql="SELECT a.id,b.display_name,b.phy_file_name,b.phy_path_name,b.file_type,b.remove,b.archive FROM docman$suffix.dm_master a,docman$suffix.dm_file b WHERE a.id = b.mast_id AND a.doc_type_code='EMPLOY' AND a.doc_id=".$this->employee_id;
+        $sql="SELECT b.lcd,a.id,b.display_name,b.phy_file_name,b.phy_path_name,b.file_type,b.remove,b.archive FROM docman$suffix.dm_master a,docman$suffix.dm_file b WHERE a.id = b.mast_id AND a.doc_type_code='EMPLOY' AND a.doc_id=".$this->employee_id;
         $attachment_old = $connection->createCommand($sql)->queryAll();
         if($attachment_old){//如果有附件
             $connection->createCommand()->insert("docman$suffix.dm_master", array(

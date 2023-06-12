@@ -75,7 +75,7 @@ class HistoryController extends Controller
         if (!$model->retrieveData($index)) {
             throw new CHttpException(404,'The requested page does not exist.');
         } else {
-            $this->render('form',array('model'=>$model,));
+            $this->render('form',array('model'=>$model,'back_type'=>$type));
         }
     }
 
@@ -143,6 +143,7 @@ class HistoryController extends Controller
                 Dialog::message(Yii::t('dialog','Information'), Yii::t('dialog','Save Done'));
                 $this->redirect(Yii::app()->createUrl('history/Form',array('index'=>$model->id)));
             } else {
+                $model->change_city = empty($model->change_city)?null:$model->city;
                 $message = CHtml::errorSummary($model);
                 $model->historyList = AuditHistoryForm::getStaffHistoryList($model->employee_id);
                 Dialog::message(Yii::t('dialog','Validation Message'), $message);

@@ -205,6 +205,18 @@ return array(
     'Pin Name'=>'襟章名稱',
     'Pin Table'=>'襟章發放統計表',
     'Pin Report'=>'襟章明細報表',
+    'Boss Audit Plan Report'=>'老總年度考核進度報表',
+    'Treaty Hint'=>'提醒小助手',
+    'Treaty Service'=>'使用中的項目',
+    'Treaty Stop'=>'已停止的項目',
+    'Show all treaty hint'=>'顯示所有提醒小助手',
+    'Show all recruit'=>'顯示所有招聘登記',
+    'recruit apply'=>'招聘登記',
+    'recruit summary'=>'招聘進度匯總',
+    'staff summary'=>'部門人數統計',
+    'household Search'=>'員工戶籍查詢',
+    'Show all household Search'=>'顯示所有員工戶籍查詢',
+    'Config office'=>'辦事處設置',
 //沈超添加結束
 );
 ?>

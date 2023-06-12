@@ -723,7 +723,25 @@ return array(
     'remaining inventory'=>'剩餘庫存',
     'remaining num'=>'剩餘數量',
     'sum num'=>'總計數量',
+    'pin type'=>'襟章類型',
+    'Ordinary Pin'=>'普通襟章',
+    'Two Pin'=>'兩項襟章',
+    'Audit Date'=>'審核日期',
+    'review ranking bool'=>'是否拉curve排名',
+    'Vacation Type Remark'=>'請假類型說明',
+    'display'=>'是否顯示',
+    'show'=>'顯示',
+    'none'=>'隱藏',
+    'bulk allot'=>'批量分配',
 //2023/02/20
     'two_air'=>'空氣凈化機租賃及銷售',
+//2023/06/06
+    'staff office'=>'辦事處',
+    'office Name'=>'辦事處名稱',
+    'office sum'=>'辦事處人數',
+    'Office List'=>'辦事處列表',
+    'Office Form'=>'辦事處表單',
+    'office employee list'=>'辦事處員工',
+    'local office'=>'本部',
     );
 ?>
