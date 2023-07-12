@@ -39,25 +39,11 @@ class ReviewAllotList extends CListPageModel
         }
         if($this->year_type===3){
             $month = intval(date("m"));
-            if(Yii::app()->params['retire']||!isset(Yii::app()->params['retire'])) {//非台灣版
-                if($this->year == 2020){
-                    $this->year_type = 1;
-                }elseif($month<3){
-                    $this->year--;
-                    $this->year_type = 1;
-                }elseif ($month<9){
-                    $this->year--;
-                    $this->year_type = 2;
-                }else{
-                    $this->year_type = 1;
-                }
+            if($month>=6&&$month<=11){
+                $this->year_type = 1;
             }else{
-                if($month>=6||$month<=11){
-                    $this->year_type = 1;
-                }else{
-                    $this->year = $month!=12?$this->year-1:$this->year;
-                    $this->year_type = 2;
-                }
+                $this->year = $month!=12?$this->year-1:$this->year;
+                $this->year_type = 2;
             }
         }
         parent::__construct();
@@ -70,7 +56,7 @@ class ReviewAllotList extends CListPageModel
         );
     }
 
-    public function getReviewDateTime($year,&$year_type){
+    public static function getReviewDateTime($year,&$year_type){
         $dateTime = $year."/";
         if(Yii::app()->params['retire']||!isset(Yii::app()->params['retire'])) {//非台灣版
             if($year == 2020){
@@ -96,21 +82,26 @@ class ReviewAllotList extends CListPageModel
 		$suffix = Yii::app()->params['envSuffix'];
 		$city = Yii::app()->user->city();
         $city_allow = Yii::app()->user->city_allow();
-        $dateTime = $this->getReviewDateTime($this->year,$this->year_type);
+        $dateTime = self::getReviewDateTime($this->year,$this->year_type);
+        $endDate = date("Y/m/d",strtotime("$dateTime - 1 month"));
         //$dateTime = date("Y/m/d",strtotime("$dateTime - 3 month"));
         //$expr_sql = " and (b.year=$this->year or b.year is null) and (b.year_type=$this->year_type or b.year_type is null)";
-		$sql1 = "select a.id,a.name,a.code,a.phone,a.city,a.entry_time,c.name as company_name,d.name as dept_name,d.review_type ,e.name as ment_name 
+		$sql1 = "select a.id,a.staff_status,a.name,a.code,a.phone,a.city,a.entry_time,c.name as company_name,d.name as dept_name,d.review_type ,e.name as ment_name 
                 from hr_employee a 
                 LEFT JOIN hr_company c ON a.company_id = c.id
                 LEFT JOIN hr_dept d ON a.position = d.id
                 LEFT JOIN hr_dept e ON a.department = e.id
-                where a.city IN ($city_allow) AND a.staff_status = 0 AND d.review_type IN (1,2,3,4) AND replace(a.entry_time,'-', '/')<='$dateTime' 
+                LEFT JOIN hr_review g ON a.id = g.employee_id and year={$this->year} and year_type={$this->year_type} 
+                where a.city IN ($city_allow) AND d.review_type IN (1,2,3,4) AND replace(a.entry_time,'-', '/')<='$dateTime' 
+                and (a.staff_status=0 or (a.staff_status=-1 and g.id is NOT NULL))
 			";
 		$sql2 = "select count(*) from hr_employee a 
                 LEFT JOIN hr_company c ON a.company_id = c.id
                 LEFT JOIN hr_dept d ON a.position = d.id
                 LEFT JOIN hr_dept e ON a.department = e.id
-                where a.city IN ($city_allow) AND a.staff_status = 0 AND d.review_type IN (1,2,3,4) AND replace(a.entry_time,'-', '/')<='$dateTime' 
+                LEFT JOIN hr_review g ON a.id = g.employee_id and year={$this->year} and year_type={$this->year_type} 
+                where a.city IN ($city_allow) AND d.review_type IN (1,2,3,4) AND replace(a.entry_time,'-', '/')<='$dateTime' 
+                and (a.staff_status=0 or (a.staff_status=-1 and g.id is NOT NULL))
 			";
 		$clause = "";
 		if (!empty($this->searchField) && !empty($this->searchValue)) {
@@ -166,9 +157,18 @@ class ReviewAllotList extends CListPageModel
             $reviewTypeList = DeptForm::getReviewType();
 			foreach ($records as $k=>$record) {
                 $arr = $this->resetStatus($record);
+                $record["entry_time"]=CGeneral::toDate($record["entry_time"]);
+                if($record["entry_time"]>$endDate){
+                    $arr["style"] = " text-muted";
+                }
+                // AND a.staff_status = 0
+                if(intval($record["staff_status"])===-1){ //已离职
+                    $arr = array("style"=>"","status"=>"已离职");
+                }
 				$this->attr[] = array(
 					'id'=>$record['id'],
 					'name'=>$record['name'],
+					'status_type'=>$record['status_type'],
 					'year'=>empty($record['year'])?$this->year:$record['year'],
 					'year_type'=>$this->getYearTypeList($record['year_type'],$this->year),
 					'code'=>$record['code'],
