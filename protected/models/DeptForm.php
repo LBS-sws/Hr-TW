@@ -457,8 +457,10 @@ class DeptForm extends CFormModel
 			$command->bindParam(':type',$this->type,PDO::PARAM_INT);
 		if (strpos($sql,':sales_type')!==false)
 			$command->bindParam(':sales_type',$this->sales_type,PDO::PARAM_INT);
-		if (strpos($sql,':level_type')!==false)
+		if (strpos($sql,':level_type')!==false){
+			$this->level_type = empty($this->level_type)?null:$this->level_type;
 			$command->bindParam(':level_type',$this->level_type,PDO::PARAM_INT);
+		}
 		if (strpos($sql,':dept_class')!==false)
 			$command->bindParam(':dept_class',$this->dept_class,PDO::PARAM_STR);
 		if (strpos($sql,':manager')!==false)
